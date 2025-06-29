@@ -18,7 +18,7 @@ class _StatusPageState extends State<StatusPage>
   late TabController _tabController;
   late AnimationController _prestigeAnimController;
   late Animation<double> _prestigeGlow;
-  String _selectedCategory = 'Все';
+  final String _selectedCategory = 'Все';
 
   @override
   void initState() {

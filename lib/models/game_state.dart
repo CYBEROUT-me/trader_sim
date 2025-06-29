@@ -21,7 +21,7 @@ class GameState {
   List<Achievement> achievements = [];
   List<String> ownedLuxuryItems = [];
   
-  Random _random = Random();
+  final Random _random = Random();
   int tickCounter = 0;
 
   TraderStatus get traderStatus => TraderStatus.getStatus(reputation);
@@ -157,7 +157,9 @@ class GameState {
       crypto.updatePrice(change);
     }
     
-    news.forEach((n) => n.tick());
+    for (var n in news) {
+      n.tick();
+    }
   }
 
   void _processMining() {

@@ -17,10 +17,13 @@ class TradingPage extends StatefulWidget {
 class _TradingPageState extends State<TradingPage> 
     with TickerProviderStateMixin {
   
-  String _sortBy = 'symbol'; // symbol, price, change, holding
+  String _sortBy = 'symbol';
   bool _ascending = true;
   String _searchQuery = '';
   late AnimationController _refreshController;
+  
+  // Высота нижней панели для расчета padding
+  static const double _bottomActionHeight = 80.0;
   
   @override
   void initState() {
@@ -39,117 +42,124 @@ class _TradingPageState extends State<TradingPage>
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // Рекламный блок
-        _buildAdBanner(),
-        
-        // Поиск и сортировка
-        _buildSearchAndSort(),
-        
-        // Быстрая статистика
-        _buildQuickStats(),
-        
-        // Список криптовалют
-        Expanded(
-          child: RefreshIndicator(
-            onRefresh: _refreshData,
-            color: const Color(0xFFF0B90B),
-            child: ListView.builder(
-              physics: const AlwaysScrollableScrollPhysics(),
-              itemCount: _getFilteredCryptos().length,
-              itemBuilder: (context, index) {
-                final crypto = _getFilteredCryptos()[index];
-                return AnimatedContainer(
-                  duration: Duration(milliseconds: 100 + (index * 50)),
-                  curve: Curves.easeOutBack,
-                  child: CryptoTile(
-                    crypto: crypto,
-                    gameState: widget.gameState,
-                    onTap: () => _showTradeDialog(context, crypto),
+    return Scaffold(
+      body: SafeArea(
+        bottom: false, // Не применяем SafeArea к низу
+        child: Column(
+          children: [
+            // Рекламный блок
+            _buildAdBanner(),
+            
+            // Поиск и сортировка
+            _buildSearchAndSort(),
+            
+            // Быстрая статистика
+            _buildQuickStats(),
+            
+            // Список криптовалют с правильным padding
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: _refreshData,
+                color: const Color(0xFFF0B90B),
+                child: ListView.builder(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  // ИСПРАВЛЕНИЕ: Добавляем padding снизу для нижней панели
+                  padding: EdgeInsets.only(
+                    bottom: _bottomActionHeight + MediaQuery.of(context).padding.bottom,
                   ),
-                );
-              },
+                  itemCount: _getFilteredCryptos().length,
+                  itemBuilder: (context, index) {
+                    final crypto = _getFilteredCryptos()[index];
+                    return AnimatedContainer(
+                      duration: Duration(milliseconds: 100 + (index * 50)),
+                      curve: Curves.easeOutBack,
+                      child: CryptoTile(
+                        crypto: crypto,
+                        gameState: widget.gameState,
+                        onTap: () => _showTradeDialog(context, crypto),
+                      ),
+                    );
+                  },
+                ),
+              ),
             ),
-          ),
+          ],
         ),
-        
-        // Нижняя панель с быстрыми действиями
-        _buildQuickActions(),
-      ],
+      ),
+      // ИСПРАВЛЕНИЕ: Используем floatingActionButtonLocation для нижней панели
+      bottomNavigationBar: _buildQuickActions(),
     );
   }
 
+  // Остальные методы остаются без изменений...
   Widget _buildAdBanner() {
-  return Container(
-    margin: const EdgeInsets.all(8),
-    padding: const EdgeInsets.all(12),
-    decoration: BoxDecoration(
-      gradient: LinearGradient(
-        colors: [
-          const Color(0xFFF0B90B).withOpacity(0.1),
-          const Color(0xFF02C076).withOpacity(0.1),
+    return Container(
+      margin: const EdgeInsets.all(8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFFF0B90B).withOpacity(0.1),
+            const Color(0xFF02C076).withOpacity(0.1),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFF0B90B).withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                Text(
+                  '🚀 Премиум стратегии',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFFF0B90B),
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Увеличь прибыль на 200%!',
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          ElevatedButton(
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('🎁 Получен бонус +50\$ за просмотр рекламы!'),
+                  backgroundColor: Color(0xFF02C076),
+                ),
+              );
+              widget.gameState.balance += 50;
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFF0B90B),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            ),
+            child: const Text(
+              'ОТКРЫТЬ',
+              style: TextStyle(fontSize: 12, color: Colors.black),
+            ),
+          ),
         ],
       ),
-      borderRadius: BorderRadius.circular(8),
-      border: Border.all(color: const Color(0xFFF0B90B).withOpacity(0.3)),
-    ),
-    child: Row(
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: const [
-              Text(
-                '🚀 Премиум стратегии',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFFF0B90B),
-                ),
-              ),
-              SizedBox(height: 4),
-              Text(
-                'Увеличь прибыль на 200%!',
-                style: TextStyle(fontSize: 12, color: Colors.grey),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: 8),
-        ElevatedButton(
-          onPressed: () {
-            HapticFeedback.lightImpact();
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('🎁 Получен бонус +50\$ за просмотр рекламы!'),
-                backgroundColor: Color(0xFF02C076),
-              ),
-            );
-            widget.gameState.balance += 50;
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFF0B90B),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          ),
-          child: const Text(
-            'ОТКРЫТЬ',
-            style: TextStyle(fontSize: 12, color: Colors.black),
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
+    );
+  }
 
   Widget _buildSearchAndSort() {
     return Container(
       padding: const EdgeInsets.all(8),
       child: Row(
         children: [
-          // Поиск
           Expanded(
             child: TextField(
               decoration: InputDecoration(
@@ -170,7 +180,6 @@ class _TradingPageState extends State<TradingPage>
           ),
           const SizedBox(width: 8),
           
-          // Сортировка
           PopupMenuButton<String>(
             icon: Container(
               padding: const EdgeInsets.all(8),
@@ -291,57 +300,62 @@ class _TradingPageState extends State<TradingPage>
     );
   }
 
+  // ИСПРАВЛЕНИЕ: Используем BottomNavigationBar вместо Container в Column
   Widget _buildQuickActions() {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.only(
+        left: 12,
+        right: 12,
+        top: 12,
+        bottom: 12 + MediaQuery.of(context).padding.bottom,
+      ),
       decoration: const BoxDecoration(
         color: Color(0xFF1E2329),
         border: Border(top: BorderSide(color: Colors.grey, width: 0.5)),
       ),
-      child: SafeArea(
-        child: Row(
-          children: [
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: () => _quickBuyTop(),
-                icon: const Icon(Icons.trending_up, size: 16),
-                label: const Text('Купить лидера'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF02C076),
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                ),
+      child: Row(
+        children: [
+          Expanded(
+            child: ElevatedButton.icon(
+              onPressed: () => _quickBuyTop(),
+              icon: const Icon(Icons.trending_up, size: 16),
+              label: const Text('Купить лидера'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF02C076),
+                padding: const EdgeInsets.symmetric(vertical: 8),
               ),
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: () => _sellAll(),
-                icon: const Icon(Icons.sell, size: 16),
-                label: const Text('Продать всё'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFF6465D),
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: ElevatedButton.icon(
+              onPressed: () => _sellAll(),
+              icon: const Icon(Icons.sell, size: 16),
+              label: const Text('Продать всё'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFF6465D),
+                padding: const EdgeInsets.symmetric(vertical: 8),
               ),
             ),
-            const SizedBox(width: 8),
-            Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFFF0B90B),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: IconButton(
-                onPressed: () => _autoTrade(),
-                icon: const Icon(Icons.smart_toy, color: Colors.black),
-                tooltip: 'Авто-торговля',
-              ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFFF0B90B),
+              borderRadius: BorderRadius.circular(8),
             ),
-          ],
-        ),
+            child: IconButton(
+              onPressed: () => _autoTrade(),
+              icon: const Icon(Icons.smart_toy, color: Colors.black),
+              tooltip: 'Авто-торговля',
+            ),
+          ),
+        ],
       ),
     );
   }
 
+  // Остальные методы без изменений...
   List<CryptoCurrency> _getFilteredCryptos() {
     var filtered = widget.gameState.cryptos.where((crypto) {
       return crypto.symbol.toLowerCase().contains(_searchQuery) ||
@@ -374,7 +388,6 @@ class _TradingPageState extends State<TradingPage>
     await Future.delayed(const Duration(seconds: 1));
     _refreshController.reverse();
     
-    // Показать уведомление
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -401,7 +414,7 @@ class _TradingPageState extends State<TradingPage>
     
     if (topCrypto.isNotEmpty) {
       final crypto = topCrypto.first;
-      final amount = 100 / crypto.price; // Купить на $100
+      final amount = 100 / crypto.price;
       widget.gameState.buyCrypto(crypto, amount);
       
       HapticFeedback.lightImpact();
@@ -435,14 +448,11 @@ class _TradingPageState extends State<TradingPage>
   }
 
   void _autoTrade() {
-    // Простая логика авто-торговли
     for (final crypto in widget.gameState.cryptos) {
       if (crypto.changePercent > 5 && crypto.holding == 0) {
-        // Купить растущие
         final amount = 50 / crypto.price;
         widget.gameState.buyCrypto(crypto, amount);
       } else if (crypto.changePercent < -3 && crypto.holding > 0) {
-        // Продать падающие
         widget.gameState.sellCrypto(crypto, crypto.holding);
       }
     }

@@ -23,7 +23,6 @@ class CryptoTycoonApp extends StatelessWidget {
           primary: Color(0xFFF0B90B), // Binance yellow
           secondary: Color(0xFF02C076), // Binance green
           surface: Color(0xFF1E2329),
-          background: Color(0xFF0B0E11),
           error: Color(0xFFF6465D), // Binance red
         ),
         appBarTheme: const AppBarTheme(

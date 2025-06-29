@@ -81,7 +81,6 @@ class _GameScreenState extends State<GameScreen>
   }
 
   void _checkFirstTime() async {
-    // В реальном приложении проверили бы SharedPreferences
     if (_isFirstTime) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _startTutorial();
@@ -97,20 +96,16 @@ class _GameScreenState extends State<GameScreen>
         _gameState.update();
       });
       
-      // Анимация изменения баланса
       if (_gameState.balance != oldBalance) {
         _animateBalanceChange();
       }
       
-      // Проверка на новые события
       _checkForNewEvents();
       
-      // Автосохранение каждые 10 секунд
       if (_gameState.tickCounter % 10 == 0) {
         _gameState.saveProgress();
       }
       
-      // Показать рекламу каждые 2 минуты
       if (_gameState.tickCounter % 120 == 0) {
         _showInterstitialAd();
       }
@@ -182,22 +177,11 @@ class _GameScreenState extends State<GameScreen>
       appBar: _buildAppBar(),
       body: Column(
         children: [
-          // Верхний рекламный баннер
           if (_showTopBanner) _buildTopBanner(),
-          
-          // Полезная информационная панель вместо простого уведомления
           if (_selectedIndex == 0 && _showInfoPanel) _buildTradingInfoPanel(),
-          
-          // Кнопка для показа скрытой панели
           if (_selectedIndex == 0 && !_showInfoPanel) _buildShowInfoButton(),
-          
-          // Уведомления (отдельно от информационной панели)
           if (_lastNotification != null) _buildNotification(),
-          
-          // Основной контент
           Expanded(child: pages[_selectedIndex]),
-          
-          // Нижняя реклама
           if (_showBottomInterstitial) _buildBottomAd(),
         ],
       ),
@@ -207,31 +191,45 @@ class _GameScreenState extends State<GameScreen>
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      title: Row(
-        children: [
-          Icon(
-            _gameState.traderStatus.icon,
-            color: _gameState.traderStatus.color,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              _gameState.playerName,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          const Spacer(),
-          _buildBalanceDisplay(),
-        ],
+      title: LayoutBuilder(
+        builder: (context, constraints) {
+          return Row(
+            children: [
+              Icon(
+                _gameState.traderStatus.icon,
+                color: _gameState.traderStatus.color,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              // Ограничиваем ширину имени игрока
+              Flexible(
+                flex: 2,
+                child: Text(
+                  _gameState.playerName,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Фиксированная ширина для баланса
+              Flexible(
+                flex: 1,
+                child: _buildBalanceDisplay(),
+              ),
+            ],
+          );
+        },
       ),
       actions: [
         IconButton(
-          icon: const Icon(Icons.help_outline),
+          icon: const Icon(Icons.help_outline, size: 20),
           onPressed: _startTutorial,
+          constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
         ),
         IconButton(
-          icon: const Icon(Icons.notifications),
+          icon: const Icon(Icons.notifications, size: 20),
           onPressed: () => _showNotification('🎉 Тестовое уведомление!'),
+          constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
         ),
       ],
     );
@@ -247,31 +245,38 @@ class _GameScreenState extends State<GameScreen>
             crossAxisAlignment: CrossAxisAlignment.end,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                '\$${_gameState.balance.toStringAsFixed(2)}',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF02C076),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  '\$${_gameState.balance.toStringAsFixed(2)}',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF02C076),
+                  ),
+                  maxLines: 1,
                 ),
               ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.star,
-                    size: 12,
-                    color: _gameState.traderStatus.color,
-                  ),
-                  const SizedBox(width: 2),
-                  Text(
-                    '${_gameState.reputation}',
-                    style: TextStyle(
-                      fontSize: 12,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.star,
+                      size: 10,
                       color: _gameState.traderStatus.color,
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 2),
+                    Text(
+                      '${_gameState.reputation}',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: _gameState.traderStatus.color,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -287,7 +292,7 @@ class _GameScreenState extends State<GameScreen>
         _gameState.cryptos.reduce((a, b) => a.changePercent > b.changePercent ? a : b);
     
     return Container(
-      height: 40,
+      constraints: const BoxConstraints(minHeight: 40, maxHeight: 50),
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -300,27 +305,32 @@ class _GameScreenState extends State<GameScreen>
         border: Border.all(color: const Color(0xFF02C076).withOpacity(0.3)),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 8),
         child: Row(
           children: [
-            Icon(Icons.trending_up, color: const Color(0xFF02C076), size: 16),
-            const SizedBox(width: 8),
+            const Icon(Icons.trending_up, color: Color(0xFF02C076), size: 16),
+            const SizedBox(width: 6),
             Expanded(
-              child: Text(
-                topGainer != null 
-                  ? 'Лидер роста: ${topGainer.symbol} +${topGainer.changePercent.toStringAsFixed(1)}% • $ownedCryptos/$totalCryptos валют'
-                  : 'Рынок загружается... • $ownedCryptos/$totalCryptos валют',
-                style: const TextStyle(color: Colors.white, fontSize: 11),
-                overflow: TextOverflow.ellipsis,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  topGainer != null 
+                    ? 'Лидер: ${topGainer.symbol} +${topGainer.changePercent.toStringAsFixed(1)}% • $ownedCryptos/$totalCryptos'
+                    : 'Загрузка... • $ownedCryptos/$totalCryptos',
+                  style: const TextStyle(color: Colors.white, fontSize: 11),
+                  maxLines: 1,
+                ),
               ),
             ),
-            Container(
-              margin: const EdgeInsets.all(4),
+            const SizedBox(width: 4),
+            SizedBox(
+              width: 28,
+              height: 28,
               child: IconButton(
                 icon: const Icon(Icons.close, size: 14, color: Colors.grey),
                 onPressed: () => setState(() => _showTopBanner = false),
                 padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
               ),
             ),
           ],
@@ -330,59 +340,60 @@ class _GameScreenState extends State<GameScreen>
   }
 
   Widget _buildNotification() {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 500),
-      height: _lastNotification != null ? null : 0,
-      child: _lastNotification != null ? SlideTransition(
-        position: _notificationSlide,
-        child: Container(
-          margin: const EdgeInsets.all(8),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF0B90B),
-            borderRadius: BorderRadius.circular(8),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.3),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  _lastNotification!,
-                  style: const TextStyle(
-                    color: Colors.black,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 2,
+    return SlideTransition(
+      position: _notificationSlide,
+      child: Container(
+        margin: const EdgeInsets.all(8),
+        constraints: const BoxConstraints(maxHeight: 60),
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF0B90B),
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                _lastNotification!,
+                style: const TextStyle(
+                  color: Colors.black,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 11,
                 ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 2,
               ),
-              IconButton(
-                icon: const Icon(Icons.close, color: Colors.black, size: 16),
+            ),
+            const SizedBox(width: 4),
+            SizedBox(
+              width: 24,
+              height: 24,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.black, size: 14),
                 onPressed: () {
                   _notificationController.reverse();
                   setState(() => _lastNotification = null);
                   _notificationTimer?.cancel();
                 },
                 padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
-      ) : const SizedBox.shrink(),
+      ),
     );
   }
 
   Widget _buildBottomAd() {
     return Container(
-      constraints: const BoxConstraints(maxHeight: 70),
+      constraints: const BoxConstraints(maxHeight: 70, minHeight: 60),
       color: const Color(0xFF1E2329),
       child: SafeArea(
         child: Padding(
@@ -394,40 +405,53 @@ class _GameScreenState extends State<GameScreen>
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(
-                      '💰 Заработай на криптовалютах!',
-                      style: TextStyle(
-                        color: Color(0xFFF0B90B),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
+                    const Flexible(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          '💰 Заработай на криптовалютах!',
+                          style: TextStyle(
+                            color: Color(0xFFF0B90B),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
                       ),
-                      overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
-                    ElevatedButton(
-                      onPressed: () {
-                        setState(() => _showBottomInterstitial = false);
-                        _showNotification('🎁 Получен бонус +100\$!');
-                        _gameState.balance += 100;
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF02C076),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                        minimumSize: const Size(0, 28),
-                      ),
-                      child: const Text(
-                        'ПОЛУЧИТЬ БОНУС',
-                        style: TextStyle(fontSize: 10, color: Colors.white),
+                    SizedBox(
+                      height: 28,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          setState(() => _showBottomInterstitial = false);
+                          _showNotification('🎁 Получен бонус +100\$!');
+                          _gameState.balance += 100;
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF02C076),
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                        ),
+                        child: const FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            'ПОЛУЧИТЬ БОНУС',
+                            style: TextStyle(fontSize: 9, color: Colors.white),
+                          ),
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
-              IconButton(
-                icon: const Icon(Icons.close, color: Colors.grey),
-                onPressed: () => setState(() => _showBottomInterstitial = false),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              const SizedBox(width: 4),
+              SizedBox(
+                width: 32,
+                height: 32,
+                child: IconButton(
+                  icon: const Icon(Icons.close, color: Colors.grey, size: 16),
+                  onPressed: () => setState(() => _showBottomInterstitial = false),
+                  padding: EdgeInsets.zero,
+                ),
               ),
             ],
           ),
@@ -444,33 +468,40 @@ class _GameScreenState extends State<GameScreen>
       ),
       child: SafeArea(
         child: Container(
-          height: 70,
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildNavItem(0, Icons.trending_up, 'Торговля'),
-              _buildNavItem(1, Icons.memory, 'Майнинг'),
-              _buildNavItem(2, Icons.star, 'Статус'),
-              _buildNavItem(3, Icons.event, 'События'),
-              _buildNavItem(4, Icons.newspaper, 'Новости'),
-              _buildNavItem(5, Icons.person, 'Профиль'),
-            ],
+          height: 65,
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              // Вычисляем доступную ширину для каждого элемента
+              final itemWidth = constraints.maxWidth / 6;
+              
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildNavItem(0, Icons.trending_up, 'Торговля', itemWidth),
+                  _buildNavItem(1, Icons.memory, 'Майнинг', itemWidth),
+                  _buildNavItem(2, Icons.star, 'Статус', itemWidth),
+                  _buildNavItem(3, Icons.event, 'События', itemWidth),
+                  _buildNavItem(4, Icons.newspaper, 'Новости', itemWidth),
+                  _buildNavItem(5, Icons.person, 'Профиль', itemWidth),
+                ],
+              );
+            },
           ),
         ),
       ),
     );
   }
 
-  Widget _buildNavItem(int index, IconData icon, String label) {
+  Widget _buildNavItem(int index, IconData icon, String label, double maxWidth) {
     final isSelected = _selectedIndex == index;
-    return Expanded(
+    return SizedBox(
+      width: maxWidth,
       child: GestureDetector(
         onTap: () {
           setState(() => _selectedIndex = index);
           HapticFeedback.selectionClick();
           
-          // Показать подсказку для туториала
           if (_showingTutorial && _tutorialStep == index) {
             _nextTutorialStep();
           }
@@ -485,24 +516,26 @@ class _GameScreenState extends State<GameScreen>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                child: Icon(
-                  icon,
-                  color: isSelected ? const Color(0xFFF0B90B) : Colors.grey,
-                  size: isSelected ? 24 : 22,
-                ),
+              Icon(
+                icon,
+                color: isSelected ? const Color(0xFFF0B90B) : Colors.grey,
+                size: isSelected ? 22 : 20,
               ),
               const SizedBox(height: 2),
-              Text(
-                label,
-                style: TextStyle(
-                  color: isSelected ? const Color(0xFFF0B90B) : Colors.grey,
-                  fontSize: 9,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      color: isSelected ? const Color(0xFFF0B90B) : Colors.grey,
+                      fontSize: 8,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    ),
+                    maxLines: 1,
+                    textAlign: TextAlign.center,
+                  ),
                 ),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
               ),
             ],
           ),
@@ -511,7 +544,159 @@ class _GameScreenState extends State<GameScreen>
     );
   }
 
-  // СИСТЕМА ТУТОРИАЛА
+  Widget _buildTradingInfoPanel() {
+    final totalPortfolio = _gameState.cryptos.fold<double>(
+      0.0, (sum, crypto) => sum + (crypto.holding * crypto.price),
+    );
+    final positiveCount = _gameState.cryptos.where((c) => c.isPositive).length;
+    final activeEvents = _gameState.news.where((n) => n.isActive).length;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFF1E2329),
+            const Color(0xFF0B0E11),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFF0B90B).withOpacity(0.3)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Первая строка
+          Row(
+            children: [
+              Icon(
+                _gameState.traderStatus.icon,
+                color: _gameState.traderStatus.color,
+                size: 14,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    "${_gameState.traderStatus.name} • Портфель: \$${totalPortfolio.toStringAsFixed(0)}",
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
+              ),
+              if (activeEvents > 0) ...[
+                const SizedBox(width: 4),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF0B90B),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '$activeEvents событий',
+                    style: const TextStyle(
+                      color: Colors.black,
+                      fontSize: 8,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 6),
+          // Вторая строка со статистикой
+          Row(
+            children: [
+              _buildQuickStat('📈', '$positiveCount растут', const Color(0xFF02C076)),
+              const SizedBox(width: 8),
+              _buildQuickStat('⚡', 'Ур.${_gameState.level}', const Color(0xFFF0B90B)),
+              const SizedBox(width: 8),
+              _buildQuickStat('💰', '${_gameState.miningRigs.length}ригов', Colors.purple),
+              const Spacer(),
+              GestureDetector(
+                onTap: () => setState(() => _showInfoPanel = false),
+                child: Icon(
+                  Icons.keyboard_arrow_up,
+                  color: Colors.grey[600],
+                  size: 18,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildShowInfoButton() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: Center(
+        child: GestureDetector(
+          onTap: () => setState(() => _showInfoPanel = true),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1E2329),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFF0B90B).withOpacity(0.5)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.keyboard_arrow_down,
+                  color: Color(0xFFF0B90B),
+                  size: 14,
+                ),
+                const SizedBox(width: 4),
+                const Text(
+                  'Показать панель',
+                  style: TextStyle(
+                    color: Color(0xFFF0B90B),
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickStat(String emoji, String text, Color color) {
+    return Flexible(
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 10)),
+            const SizedBox(width: 2),
+            Text(
+              text,
+              style: TextStyle(
+                color: color,
+                fontSize: 9,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // СИСТЕМА ТУТОРИАЛА (остается без изменений)
   void _startTutorial() {
     setState(() {
       _showingTutorial = true;
@@ -524,36 +709,12 @@ class _GameScreenState extends State<GameScreen>
     _tutorialOverlay?.remove();
     
     final steps = [
-      TutorialStep(
-        'Добро пожаловать в Crypto Tycoon!',
-        'Здесь вы можете торговать криптовалютами и зарабатывать деньги.',
-        0,
-      ),
-      TutorialStep(
-        'Торговля',
-        'Покупайте и продавайте криптовалюты. Следите за графиками!',
-        0,
-      ),
-      TutorialStep(
-        'Майнинг',
-        'Купите оборудование для пассивного дохода.',
-        1,
-      ),
-      TutorialStep(
-        'Статус',
-        'Повышайте репутацию и покупайте предметы роскоши.',
-        2,
-      ),
-      TutorialStep(
-        'События',
-        'Участвуйте в событиях и квестах для получения наград.',
-        3,
-      ),
-      TutorialStep(
-        'Новости',
-        'Следите за новостями - они влияют на курсы!',
-        4,
-      ),
+      TutorialStep('Добро пожаловать в Crypto Tycoon!', 'Здесь вы можете торговать криптовалютами и зарабатывать деньги.', 0),
+      TutorialStep('Торговля', 'Покупайте и продавайте криптовалюты. Следите за графиками!', 0),
+      TutorialStep('Майнинг', 'Купите оборудование для пассивного дохода.', 1),
+      TutorialStep('Статус', 'Повышайте репутацию и покупайте предметы роскоши.', 2),
+      TutorialStep('События', 'Участвуйте в событиях и квестах для получения наград.', 3),
+      TutorialStep('Новости', 'Следите за новостями - они влияют на курсы!', 4),
     ];
 
     if (_tutorialStep < steps.length) {
@@ -571,13 +732,10 @@ class _GameScreenState extends State<GameScreen>
         color: Colors.black.withOpacity(0.7),
         child: Stack(
           children: [
-            // Затемнение
             GestureDetector(
               onTap: _endTutorial,
               child: Container(color: Colors.transparent),
             ),
-            
-            // Подсветка таргета в нижней навигации
             if (step.targetIndex >= 0)
               Positioned(
                 bottom: 20,
@@ -599,8 +757,6 @@ class _GameScreenState extends State<GameScreen>
                   ),
                 ),
               ),
-            
-            // Текст туториала
             Positioned(
               top: MediaQuery.of(context).size.height * 0.2,
               left: 20,
@@ -654,9 +810,7 @@ class _GameScreenState extends State<GameScreen>
                       children: [
                         TextButton(
                           onPressed: _endTutorial,
-                          style: TextButton.styleFrom(
-                            foregroundColor: Colors.grey,
-                          ),
+                          style: TextButton.styleFrom(foregroundColor: Colors.grey),
                           child: const Text('Пропустить'),
                         ),
                         ElevatedButton(
@@ -697,149 +851,6 @@ class _GameScreenState extends State<GameScreen>
     });
     
     _showNotification('🎉 Добро пожаловать в игру! Удачи в торговле!');
-  }
-
-  Widget _buildTradingInfoPanel() {
-    final totalPortfolio = _gameState.cryptos.fold<double>(
-      0.0, (sum, crypto) => sum + (crypto.holding * crypto.price),
-    );
-    final positiveCount = _gameState.cryptos.where((c) => c.isPositive).length;
-    final activeEvents = _gameState.news.where((n) => n.isActive).length;
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            const Color(0xFF1E2329),
-            const Color(0xFF0B0E11),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFF0B90B).withOpacity(0.3)),
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Icon(
-                _gameState.traderStatus.icon,
-                color: _gameState.traderStatus.color,
-                size: 16,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  "${_gameState.traderStatus.name} • Портфель: \$${totalPortfolio.toStringAsFixed(0)}",
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              if (activeEvents > 0)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF0B90B),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    '$activeEvents событий',
-                    style: const TextStyle(
-                      color: Colors.black,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Row(
-            children: [
-              _buildQuickStat('📈', '$positiveCount растут', const Color(0xFF02C076)),
-              const SizedBox(width: 12),
-              _buildQuickStat('⚡', 'Уровень ${_gameState.level}', const Color(0xFFF0B90B)),
-              const SizedBox(width: 12),
-              _buildQuickStat('💰', '${_gameState.miningRigs.length} ригов', Colors.purple),
-              const Spacer(),
-              GestureDetector(
-                onTap: () {
-                  setState(() => _showInfoPanel = false);
-                },
-                child: Icon(
-                  Icons.keyboard_arrow_up,
-                  color: Colors.grey[600],
-                  size: 20,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildShowInfoButton() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: Center(
-        child: GestureDetector(
-          onTap: () {
-            setState(() => _showInfoPanel = true);
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1E2329),
-              borderRadius: BorderRadius.circular(15),
-              border: Border.all(color: const Color(0xFFF0B90B).withOpacity(0.5)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.keyboard_arrow_down,
-                  color: const Color(0xFFF0B90B),
-                  size: 16,
-                ),
-                const SizedBox(width: 4),
-                const Text(
-                  'Показать панель',
-                  style: TextStyle(
-                    color: Color(0xFFF0B90B),
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildQuickStat(String emoji, String text, Color color) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(emoji, style: const TextStyle(fontSize: 12)),
-        const SizedBox(width: 4),
-        Text(
-          text,
-          style: TextStyle(
-            color: color,
-            fontSize: 10,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ],
-    );
   }
 }
 
